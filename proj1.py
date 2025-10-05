@@ -66,5 +66,28 @@ plt.title("Pearson correlation between features")
 plt.tight_layout();
 plt.show()
 
+#3 Correlation Analysis (Pearson Correlation)
+from scipy.stats import pearsonr
+from sklearn.model_selection import train_test_split
 
+df['Step']=df['Step'].astype('category')
+xall=df[['X','Y','Z']]
+yall=df['Step']
+xtrain, xtest,ytrain, ytest=train_test_split(xall,yall,test_size=0.2, stratify=yall, random_state=42)
+
+ytraincodes= ytrain.cat.codes #integers 0 to n-1
+
+corrfeats=xtrain.corr(method='pearson')
+plt.figure(figsize=(4,3))
+sns.heatmap(corrfeats, annot=True, fmt='.2f',cmap='coolwarm')
+plt.title('Pearson Correlation - features')
+plt.tight_layout()
+plt.show()
+
+rows=[]
+for col in xtrain.columns:
+    r,p=pearsonr(xtrain[col],ytraincodes)
+    rows.append({'feature':col,'pearson r with step':r,'pvalue':p})
+assocdf=pd.DataFrame(rows).sort_values('pearson r with step', key=abs, ascending=False)
+print(assocdf)
 
