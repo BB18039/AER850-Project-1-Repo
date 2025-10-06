@@ -208,3 +208,22 @@ plt.title('Confusion matrix - StackingClassifier')
 plt.xlabel('pred'); plt.ylabel('true')
 plt.tight_layout()
 plt.show()
+
+#step 7 model evaluation
+coords = np.array([
+    [9.375, 3.0625, 1.51],
+    [6.995, 5.125, 0.3875],
+    [0.0,   3.0625, 1.93],
+    [9.4,   3.0,    1.8],
+    [9.4,   3.0,    1.3]
+])
+
+predints=model.predict(coords)
+predlabels=le.inverse_transform(predints)
+
+probs=model.predict_proba(coords)
+predconf=probs.max(axis=1) #prob per sample
+
+for i, (c, pi, pl, conf)in enumerate(zip(coords, predints, predlabels, predconf)):
+    print (f"Point{i+1}:coords={c.tolist():} --> encoded ={int(pi)} label{pl} confidence={conf:.3f}")
+    
