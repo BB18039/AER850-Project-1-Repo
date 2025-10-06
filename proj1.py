@@ -178,3 +178,33 @@ for name, model in models.items():
     print("Saved model --> best_pipeline_logreg.joblib")
     joblib.dump(le,'label_encoder.joblib')
     print("Saved label encoder --> label_encoder.joblib")
+    
+#step 6 two stacked models
+from sklearn.ensemble import StackingClassifier
+
+base_svc=gs_svc.best_estimator_
+base_rf=gs_rf.best_estimator_
+
+estimators=[('svc',base_svc),('rf',base_rf)] #stacking classifier
+final_est=LogisticRegression(max_iter=1000)
+
+stack_clf=StackingClassifier(estimators=estimators,final_estimator=final_est,cv=5,n_jobs=-1,passthrough=False)
+
+stack_clf.fit(xtrain, ytrain)
+
+ypredstack=stack_clf.predict(xtest)
+accstack=accuracy_score(ytest,ypredstack)
+f1_stack=f1_score(ytest, ypredstack, average='macro')
+
+print("*** StackingClassifier Evaluation ***")
+print("Accuracy:", accstack)
+print("Macro f1:", f1_stack)
+print(classification_report(ytest, ypredstack, digits=4))
+
+cm=confusion_matrix(ytest, ypredstack)
+plt.figure(figsize=(6,5))
+sns.heatmap(cm,annot=True, fmt='d', cmap='rocket')
+plt.title('Confusion matrix - StackingClassifier')
+plt.xlabel('pred'); plt.ylabel('true')
+plt.tight_layout()
+plt.show()
