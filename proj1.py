@@ -157,4 +157,24 @@ rnd_search.fit(xtrain, ytrain)
 print("Best randomized RF parameters:",rnd_search.best_params_)
 print("Best randomized RF CV score:",rnd_search.best_score_)
 
-#best models evaluated on test set
+#best estimators evaluated on test set
+models={'LogisticRegression':gs_lr.best_estimator_,'SVC':gs_svc.best_estimator_,'RandomForest':gs_rf.best_estimator_,'RandomizedRF':rnd_search.best_estimator_}
+for name, model in models.items():
+    ypred=model.predict(xtest)
+    print("\n=== Evaluation:",name)
+    print("Accuracy:",accuracy_score(ytest, ypred))
+    print("Macro F1:",f1_score(ytest, ypred, average='macro'))
+    print(classification_report(ytest, ypred))
+    cm=confusion_matrix(ytest, ypred)
+    plt.figure(figsize=(6,5))
+    sns.heatmap(cm,annot=True, fmt='d')
+    plt.title(f'Confusion matrix-{name}')
+    plt.xlabel('pred');plt.ylabel('true')
+    plt.tight_layout();plt.show()
+    
+    #chosen model is logistic regression so model and encoder will be saved using joblib
+    best_logreg=gs_lr.best_estimator_ #pipeline with scaler+logistic regression
+    joblib.dump(best_logreg,'best_pipeline_logreg.joblib')
+    print("Saved model --> best_pipeline_logreg.joblib")
+    joblib.dump(le,'label_encoder.joblib')
+    print("Saved label encoder --> label_encoder.joblib")
