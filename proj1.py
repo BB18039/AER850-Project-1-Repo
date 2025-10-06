@@ -91,3 +91,70 @@ for col in xtrain.columns:
 assocdf=pd.DataFrame(rows).sort_values('pearson r with step', key=abs, ascending=False)
 print(assocdf)
 
+#4 classification model dev/eng (preprocessing, model pipelines, gridsearch and random searchcv)
+
+import joblib
+
+from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.pipeline import Pipeline 
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier 
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
+
+df['Step']=df['Step'].astype('category')
+x=df[['X','Y','Z']].values
+yraw=df['Step'].values #categorical labels
+le=LabelEncoder()
+y=le.fit_transform(yraw)
+print("Label mapping:", dict(enumerate(le.classes_)))
+
+#train/test split
+xtrain, xtest, ytrain, ytest=train_test_split(x,y,test_size=0.2, stratify=y, random_state=42)
+print("Train/test sizes:", xtrain.shape,xtest.shape)
+
+#pipeline
+pipe=Pipeline([('scaler',StandardScaler()),('clf',LogisticRegression(max_iter=1000))]) #scaler scales features
+
+#parameter grids for GridSearchCV
+param_grid_lr={'clf__penalty':['l2'],'clf__C':[0.01,0.1,1.0,10.0],'clf__solver':['lbfgs']}
+param_grid_svc={'clf__C':[0.1,1.0,10.0],'clf__kernel':['rbf','linear'], 'clf__gamma':['scale','auto']}
+param_grid_rf={'clf__max_depth':[None,5,10],'clf__min_samples_leaf':[1,2,4]}
+
+#GridSearchCV setup
+commoncv=5
+scoringchoice='f1_macro' #treats classes equally
+
+#Logic Regression GridSearch
+pipe.set_params(clf=LogisticRegression(max_iter=1000))
+gs_lr=GridSearchCV(pipe,param_grid=param_grid_lr, cv=commoncv, scoring=scoringchoice, n_jobs=-1,verbose=1)
+gs_lr.fit(xtrain,ytrain)
+print("Best LR parameters:",gs_lr.best_params_)
+print("Best LR CV Score:", gs_lr.best_score_)
+
+#SVC GridSearch
+pipe.set_params(clf=SVC(probability=True))
+gs_svc=GridSearchCV(pipe, param_grid=param_grid_svc, cv=commoncv, scoring=scoringchoice, n_jobs=-1, verbose=1)
+gs_svc.fit(xtrain,ytrain)
+print("Best SVC parameters:",gs_svc.best_params_)
+print("Best SVC CV score:", gs_svc.best_score_)
+
+#Random Forest GridSearch
+pipe.set_params(clf=RandomForestClassifier(random_state=42))
+gs_rf=GridSearchCV(pipe, param_grid=param_grid_rf, cv=commoncv, scoring=scoringchoice, n_jobs=-1, verbose=1)
+gs_rf.fit(xtrain, ytrain)
+print("Best RF parameters:", gs_rf.best_params_)
+print("Best RF CV score:", gs_rf.best_score_)
+
+#RandomSearchCV for RandomForest
+
+from scipy.stats import randint
+rndparamdist={'clf__n_estimators':randint(50,300),'clf__max_depth':[None,5,10,20],'clf__min_samples_leaf':randint(1,6)}
+pipe.set_params(clf=RandomForestClassifier(random_state=42))
+rnd_search=RandomizedSearchCV(pipe, param_distributions=rndparamdist, n_iter=20, cv=commoncv, scoring=scoringchoice, random_state=42, n_jobs=-1,verbose=1)
+rnd_search.fit(xtrain, ytrain)
+print("Best randomized RF parameters:",rnd_search.best_params_)
+print("Best randomized RF CV score:",rnd_search.best_score_)
+
+#best models evaluated on test set
